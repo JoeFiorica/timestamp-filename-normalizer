@@ -1,99 +1,64 @@
 # Timestamp Filename Normalizer
 
-A concise Python utility that standardizes inconsistent MP4 filenames by assigning each one a reliable date—pulled from legacy filename patterns, raw data folders, or a median-based fallback—then converting everything into the clean, sortable format:
+Normalize top-level MP4 names to `SYYYYEMMDD - Title.mp4`.
+Dates come from existing names, matching raw-data folders or a median fallback.
+Fallback dates are estimates, not verified recording timestamps.
 
-```
-SYYYYEMMDD - Title.mp4
-```
+## Requirements
 
----
+Windows with Python 3.11+ available as `python`. Keep `findname.bat` and `findname.py` together.
+No Python packages or network access are needed.
 
-## 🎯 What This Tool Does
+## Usage
 
-- Normalizes legacy names like `2022_02-08_Title.mp4`
-- Extracts timestamps from associated raw-data folders
-- Cleans messy titles (removes prefixes/suffixes like `Twitter_`)
-- Assigns fallback dates using the median of all known timestamps
-- Auto-increments dates to avoid duplicates (e.g., Twitter reposts)
-- Guarantees correct `.mp4` extensions and prevents naming collisions
+Double-click `findname.bat` to preview MP4s beside the launcher, or give a local folder:
 
----
-
-## 🧠 How It Works
-
-### 1. Legacy Filename Parsing
-Matches:
-
-```
-YYYY_MM-DD_Title.mp4
+```bat
+findname.bat "C:\Videos\Example Folder"
+findname.bat "C:\Videos\Example Folder" --apply
+python findname.py --help
 ```
 
-→ Converts to standard format.
+Without `--apply`, no file is renamed. Review the plan and back up valuable media first.
+Commands with arguments finish without pausing. In PowerShell, prefix BAT commands
+with `.\`. Quote paths containing spaces.
 
-### 2. Raw Folder Timestamp Extraction
-If the MP4 filename has no date:
+## Behavior
 
-- Locates a raw-data folder with a matching title
-- Recursively scans filenames and subfolders for valid timestamps
-- Applies the extracted date
+- A name such as `2022_02-08_Title.mp4` supplies its date and title.
+- Otherwise, a raw folder whose name contains the cleaned title supplies the date.
+  Multiple matches stop the plan. The folder's own date takes priority, followed by
+  descendant files before child-directory names, sorted within each group.
+- Raw dates accept `YYYYMMDD`, `YYYY-MM-DD`, `YYYY_MM_DD`, `YYYY_MM-DD` and `YYYY MM DD`.
+  Invalid raw dates are ignored; invalid dated MP4 names stop the plan.
+- Already normalized files stay unchanged and contribute to the median known date.
+  Undated files receive that median, then one-day increments. No known date stops the plan.
+- Existing destinations advance the proposed date until a free name is found.
+- Titles use the existing left/right underscore-selection rule.
+  MP4 names containing `findname` are skipped.
 
-### 3. Median-Based Fallback
-If no datestamp exists at all:
+## Outputs
 
-- Calculates the median of all extracted dates
-- Applies it to undated files
-- Increments by +1 day for duplicates
+Plans and completed renames print to the console; no report files are created.
+Exit codes: 0 completed preview/application; 1 operational error; 2 bad arguments.
 
----
+## Safety and privacy
 
-## ▶️ Usage
+Only regular top-level MP4s are renamed; their bytes and extension case are retained.
+Raw folders are read for names only. Links are not traversed; linked MP4s and network
+folders are refused. Existing names are never overwritten. Avoid concurrent changes:
+a write error can leave a partial batch. Keep the console output to help recover manually.
+No telemetry or uploads; console filenames may identify your library.
 
-Run the tool by double-clicking or via terminal:
+Defaults are 10,000 scanned entries, raw depth 16 and 30 seconds.
+Adjust with `--max-files` (1-100000), `--max-depth` (0-64) and `--timeout` (1-300 seconds).
 
-```bash
-python timestamp-filename-normalizer.py
-```
+## Troubleshooting
 
-The script:
+Check `python --version`; install Python separately with PATH enabled if missing.
+Run `python findname.py "C:\Videos\Example Folder"` to see errors directly.
+In a disposable folder, create empty `2024_01-02_Demo.mp4`. Preview leaves it unchanged;
+`--apply` yields `S2024E0102 - Demo.mp4`. A second preview should propose zero renames.
 
-1. Scans the current folder for `.mp4`
-2. Parses any legacy filenames
-3. Extracts dates from raw folders
-4. Assigns fallback median timestamps
-5. Renames files into `SYYYYEMMDD - Title.mp4`
-6. Prints a clear, readable log
-7. Pauses before closing
-
----
-
-## 📁 Expected Folder Layout
-
-```
-/YourFolder/
-│
-├── Title.mp4
-├── RAW_2023_01-24_Title/
-│     ├── metadata.json
-│     ├── frame_2023-01-24.png
-│     └── ...
-│
-└── 2022_02-08_Title.mp4
-```
-
-Only `.mp4` files in the main directory are renamed.  
-Subfolders are used only to extract timestamps.
-
----
-
-## ⚠️ Notes
-
-- Handles `.mp4` only (top-level directory)
-- Skips already normalized files
-- Uses case-insensitive matching for raw-data folders
-- Ensures every output filename is unique and chronological
-
----
-
-## ✅ Result
-
-A completely standardized, sortable library of MP4 files—clean, dated, and archive-ready.
+Report issues with example filenames, the command and expected/actual result.
+Omit personal filenames and media.
